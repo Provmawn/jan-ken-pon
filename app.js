@@ -11,10 +11,28 @@ app.use('/client', express.static(__dirname + '/client'));
 server.listen(2000);
 console.log("Connected...");
 
-var io = require('socket.io')(server, {});
+var PLAYERS = [];
+var LOBBIES = [];
 
+var createLobby = function(player_pair) {
+
+}
+
+var io = require('socket.io')(server, {});
 io.sockets.on('connection', function(socket){
     console.log("User connected...");
+    socket.id = Math.random();
+    PLAYERS.push(socket.id);
+    if (PLAYERS.length % 2 == 0) {
+        createLobby({
+            player_1: PLAYERS.shift(),
+            player_2: PLAYERS.shift()
+        });
+
+    }
+    for (var key in PLAYERS) {
+        console.log(PLAYERS[key]);
+    }
 
     socket.on('msg', function(msg){
         console.log('You got a message: ' + msg.txt);
@@ -22,6 +40,9 @@ io.sockets.on('connection', function(socket){
 
     socket.on('disconnect', function(socket) {
         console.log("User disconnected");
-        delete socket;
+        console.log("SIZE OF PLAYERS: " + PLAYERS.length);
+
+        delete PLAYERS[socket.id];
+        PLAYERS.splice(socket.id, 1); // remove player from array
     });
 });
