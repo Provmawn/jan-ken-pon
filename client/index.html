@@ -10,30 +10,32 @@
 <body>
     <div class ="form">
         <h1>Rock Paper Sissors</h1>
-        <button id="rock" type = "button">
-            Rock
-        </button>
-        <button id="paper" type = "button">
-            Paper
-        </button>
-        <button id="sissors" type = "button">
-            sissors
-        </button>
+        <div class = "buttons">
+            <button id="rock" type = "button">
+                Rock
+            </button>
+            <button id="paper" type = "button">
+                Paper
+            </button>
+            <button id="sissors" type = "button">
+                sissors
+            </button>
+        </div>
     </div>
     <script>
-            var socket = io();
-            var rock = document.getElementById("rock");
-            var paper = document.getElementById("paper");
-            var sissors = document.getElementById("sissors");
-            var msg = function(str){
-                socket.emit('msg', {
-                    txt: str
-                });
-            }
-            rock.addEventListener("click", msg("rock"));
-            paper.addEventListener("click", msg("paper"));
-            sissors.addEventListener("click", msg("sissors"));
-        </script>
+        var socket = io();
+        var rock = document.getElementById("rock");
+        var paper = document.getElementById("paper");
+        var sissors = document.getElementById("sissors");
+        var msg = function(str){
+            socket.emit('msg', {
+                txt: str
+            });
+        }
+        rock.addEventListener("click", msg("rock"));
+        paper.addEventListener("click", msg("paper"));
+        sissors.addEventListener("click", msg("sissors"));
+    </script>
 </body>
 </html>
 
