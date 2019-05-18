@@ -18,5 +18,10 @@ io.sockets.on('connection', function(socket){
 
     socket.on('msg', function(msg){
         console.log('You got a message: ' + msg.txt);
-    })
+    });
+
+    socket.on('disconnect', function(socket) {
+        console.log("deleted");
+        delete socket;
+    });
 });
