@@ -1,18 +1,14 @@
-<canvas id="ctx" width="500" height="500" style="border: 1px solid #000000"></canvas>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/1.4.5/socket.io.js"></script>
-<script>
-    var ctx = document.getElementById('ctx').getContext('2d');
-    var socket = io();
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Page Title</title>
+    <link rel = "stylesheet" href="style.css">
+</head>
+<body>
+    <div class ="form">
+        <h1>Rock Paper Sissors</h1>
+    </div>
 
-    socket.on('update_position', function(data) {
-            console.log("hello");
-            for (var i = 0; i < data.length; ++i) {
-                ctx.fillStyle = "#000000";
-                ctx.fillRect(data[i].x, data[i].y, 10, 10);
-            }
-    });
+</body>
+</html>
 
-    socket.on('clear_screen', function() {
-        ctx.clearRect(0, 0, 500, 500);
-    });
-</script>
