@@ -21,7 +21,7 @@ io.sockets.on('connection', function(socket){
     });
 
     socket.on('disconnect', function(socket) {
-        console.log("deleted");
+        console.log("User disconnected");
         delete socket;
     });
 });
