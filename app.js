@@ -46,7 +46,7 @@ io.sockets.on('connection', function(socket){
         io.emit('chat message', msg);
       });
      
-    socket.on('disconnect', function(socket) {
+    socket.on('disconnect', function() {
 
         delete PLAYERS[socket.id];
         PLAYERS.splice(socket.id, 1); // remove player from array
