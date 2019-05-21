@@ -34,8 +34,14 @@
     </div>
     <script>
 
+        var socket = io();
+        var msg = function(str) {
+            socket.emit('msg', {
+                txt: str
+            });
+        }
+
         $(function () {
-            var socket = io();
             $('form').submit(function(e){
                 e.preventDefault(); // prevents page reloading
                 socket.emit('chat message', $('#m').val());
@@ -47,11 +53,6 @@
             });
         });
 
-        var msg = function(str){
-            socket.emit('msg', {
-                txt: str
-            });
-        }
     </script>
 </body>
 </html>

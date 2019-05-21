@@ -11,30 +11,34 @@ app.use('/client', express.static(__dirname + '/client'));
 server.listen(2000);
 console.log("Connected...");
 
+var SOCKETS = [];
 var PLAYERS = [];
-var roomno = 0;
+var LOBBIES = [];
+var P_ID = 1;
+var L_ID = 1;
+
+var createLobby = function(player_pair) {
+    LOBBIES.push(player_pair);
+    console.log("LOBBY " + LOBBIES.length + ": " + player_pair.player_1.id + " " + player_pair.player_2.id);
+}
 
 var io = require('socket.io')(server, {});
 io.sockets.on('connection', function(socket){
-    console.log("User connected...");
-    PLAYERS.push(socket.id);
+    socket.id = P_ID++;
+    socket.choice = "NONE";
+    PLAYERS.push(socket);
 
-    /*
-    //Increase roomno 2 clients are present in a room.
-   if(io.nsps['/'].adapter.rooms["room-"+roomno] && io.nsps['/'].adapter.rooms["room-"+roomno].length > 1) roomno++;
-   socket.join("room-"+roomno);
-
-   //Send this event to everyone in the room.
-   io.sockets.in("room-"+roomno).emit('connectToRoom', "You are in room no. "+roomno);
-
-   */
-
-    for (var key in PLAYERS) {
-        console.log(PLAYERS[key]);
+    if (PLAYERS.length % 2 == 0) {
+        createLobby({
+            player_1: PLAYERS.shift(),
+            player_2: PLAYERS.shift(),
+            lobby_id: L_ID++,
+        });
     }
 
     socket.on('msg', function(msg){
         console.log('You got a message: ' + msg.txt);
+        socket.choice = msg.txt;
     });
 
     socket.on('chat message', function(msg){
@@ -43,12 +47,37 @@ io.sockets.on('connection', function(socket){
       });
      
     socket.on('disconnect', function(socket) {
-        console.log("User Has left...");
+
         delete PLAYERS[socket.id];
         PLAYERS.splice(socket.id, 1); // remove player from array
-
-        console.log("Number of live Connections: " + PLAYERS.length);
-        //socket.leave("room-"+roomno);
-
     });
 });
+
+setInterval(function() {
+    for (var pair in LOBBIES) {
+        let p1_choice = LOBBIES[pair].player_1.choice;
+        let p2_choice = LOBBIES[pair].player_2.choice;
+        if (p1_choice != "NONE" &&
+            p2_choice != "NONE") {
+
+            if (p1_choice === "rock" && p2_choice === "sissors") {
+                console.log("rock wins");
+            } else if (p1_choice === "sissors" && p2_choice === "rock") {
+                console.log("sissors wins");
+            } else if (p1_choice === "paper" && p2_choice === "sissors") {
+                console.log("sissors wins");
+            } else if (p1_choice === "sissors" && p2_choice === "rock") {
+                console.log("rock wins");
+            } else if (p1_choice === "paper" && p2_choice === "sissors") {
+                console.log("sissors wins");
+            } else if (p1_choice === "paper" && p2_choice === "rock") {
+                console.log("paper wins");
+            } else {
+                console.log("tie");
+            }
+
+        }
+    }
+
+}, 1000/25);
+
