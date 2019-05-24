@@ -13,14 +13,22 @@
         <h1>Rock Paper Sissors</h1>
 
         <div class = "buttons">
-            <button id="rock" type = "button" onclick="msg('rock')">
+            <button type="button" onclick="game_choice('rock')">
                 Rock
             </button>
-            <button id="paper" type = "button" onclick="msg('paper')">
+            <button type="button" onclick="game_choice('paper')">
                 Paper
             </button>
-            <button id="sissors" type = "button" onclick="msg('sissors')">
-                sissors
+            <button type="button" onclick="game_choice('sissors')">
+                Scissors
+            </button>
+            <br>
+            <br>
+            <button type="button" onclick="print_socket()">
+                Debug_Print Socket
+            </button>
+            <button type="button" onclick="join_game()">
+                Join Game
             </button>
         </div>
 
@@ -32,28 +40,40 @@
         </div>
 
     </div>
-    <script>
+<script>
 
-        var socket = io();
-        var msg = function(str) {
-            socket.emit('msg', {
-                txt: str
-            });
-        }
+    var socket = io();
 
-        $(function () {
-            $('form').submit(function(e){
-                e.preventDefault(); // prevents page reloading
-                socket.emit('chat message', $('#m').val());
-                $('#m').val('');
-                return false;
-            });
-            socket.on('chat message', function(msg){
-                $('#messages').append($('<li>').text(msg));
-            });
+    var game_choice = (str) => {
+        socket.emit('game_choice', {
+            id: socket.id,
+            choice: str,
         });
+    }
 
-    </script>
+    var print_socket = () => {
+        socket.emit('print_socket');
+    }
+
+    var join_game = () => {
+        socket.emit('join_game');
+    }
+
+     
+
+    $(function () {
+        $('form').submit(function(e){
+            e.preventDefault(); // prevents page reloading
+            socket.emit('chat message', $('#m').val());
+            $('#m').val('');
+            return false;
+        });
+        socket.on('chat message', function(msg){
+            $('#messages').append($('<li>').text(msg));
+        });
+    });
+
+</script>
 </body>
 </html>
 

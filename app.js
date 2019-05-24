@@ -2,82 +2,160 @@ var express = require('express');
 var app = express();
 var server = require('http').Server(app);
 
-app.get('/', function(req, res) {
+app.get('/', (req, res) => {
     res.sendFile(__dirname + '/client/index.html');
 });
 
 app.use('/client', express.static(__dirname + '/client'));
 
 server.listen(2000);
-console.log("Connected...");
 
-var SOCKETS = [];
-var PLAYERS = [];
-var LOBBIES = [];
-var P_ID = 1;
-var L_ID = 1;
 
-var createLobby = function(player_pair) {
-    LOBBIES.push(player_pair);
-    console.log("LOBBY " + LOBBIES.length + ": " + player_pair.player_1.id + " " + player_pair.player_2.id);
+
+var get_rooms = (socket) => {
+    let info = Object.keys(socket.rooms); // socket.rooms is part of socket.io
+    let id = info.shift();
+    let rooms = [];
+    while (info.length > 0) {
+        rooms.push(info.shift());
+    }
+
+    return rooms;
 }
 
-var io = require('socket.io')(server, {});
-io.sockets.on('connection', function(socket){
-    socket.id = P_ID++;
-    socket.choice = "NONE";
-    PLAYERS.push(socket);
+var in_room = (socket, room) => {
+    let rooms = get_rooms(socket);
+    let room_index = rooms.indexOf(room);
+    if (room_index == -1) {
+        //console.log('in_room: ' + room + ' not found in current rooms');
+        return false;
+    }
+    return true;
+}
 
-    if (PLAYERS.length % 2 == 0) {
-        createLobby({
-            player_1: PLAYERS.shift(),
-            player_2: PLAYERS.shift(),
-            lobby_id: L_ID++,
-        });
+var join_room = (room_to_leave, socket, room_to_join) => {
+    let rooms = get_rooms(socket);
+    let room_index = rooms.indexOf(room_to_leave);
+    if (room_index == -1) { // room to leave not available
+        //console.log('join_room: ' + room_to_leave + ' not found in current rooms');
+        return;
     }
 
-    socket.on('msg', function(msg){
-        console.log('You got a message: ' + msg.txt);
-        socket.choice = msg.txt;
+    // let other sockets this is leaving current room
+    socket.broadcast.to(rooms[room_index]).emit('leave_room', {
+        id: socket.id,
+        room: room_to_leave ,
     });
 
-    socket.on('chat message', function(msg){
-        console.log('message: ' + msg);
-        io.emit('chat message', msg);
-      });
-     
-    socket.on('disconnect', function() {
+    // leave room
+    socket.leave(rooms[room_index]);
 
-        delete PLAYERS[socket.id];
-        PLAYERS.splice(socket.id, 1); // remove player from array
+    socket.join(room_to_join);
+}
+
+var get_id = (socket) => {
+    let info = Object.keys(socket.rooms); // socket.rooms is part of socket.io
+    let id = info.shift();
+
+    return id;
+}
+
+var SOCKETS = [];
+
+var ROOM_NO = 0;
+
+
+
+const io = require('socket.io')(server, {});
+io.sockets.on('connection', (socket) => {
+
+    //socket.room = 'lobby';
+    socket.join('lobby');
+
+    console.log('(user connected...) users in lobby: ' + socket.adapter.rooms.lobby.length);
+
+    socket.choice = 'none';
+
+    // put socket in list
+    SOCKETS[socket.id] = socket;
+
+    // on disconnecting
+    socket.on('disconnecting', () => {
+
     });
-});
 
-setInterval(function() {
-    for (var pair in LOBBIES) {
-        let p1_choice = LOBBIES[pair].player_1.choice;
-        let p2_choice = LOBBIES[pair].player_2.choice;
-        if (p1_choice != "NONE" &&
-            p2_choice != "NONE") {
-
-            if (p1_choice === "rock" && p2_choice === "sissors") {
-                console.log("rock wins");
-            } else if (p1_choice === "sissors" && p2_choice === "rock") {
-                console.log("sissors wins");
-            } else if (p1_choice === "paper" && p2_choice === "sissors") {
-                console.log("sissors wins");
-            } else if (p1_choice === "sissors" && p2_choice === "rock") {
-                console.log("rock wins");
-            } else if (p1_choice === "paper" && p2_choice === "sissors") {
-                console.log("sissors wins");
-            } else if (p1_choice === "paper" && p2_choice === "rock") {
-                console.log("paper wins");
-            } else {
-                console.log("tie");
-            }
-
+    // on disconnect
+    socket.on('disconnect', () => {
+        
+        if (socket.adapter.rooms.lobby) { // if lobby exists ( at least 1 person is in the lobby )
+            console.log('(user disconnected...) users in lobby: ' + socket.adapter.rooms.lobby.length);
         }
-    }
+        // let other sockets know of disconnect
+        socket.broadcast.to(socket.room).emit('disconnect_', {
+            id: socket.id,
+        });
 
-}, 1000/25);
+
+        // rooms are left automatically upon disconnect
+
+
+        // remove socket from 'SOCKETS'
+        let i = SOCKETS.indexOf(socket);
+        delete SOCKETS[socket.id];
+        SOCKETS.splice(i, 1);
+    });
+
+
+    // debugging print
+    socket.on('print_socket', () => {
+        console.group('CURRENT_SOCKET:');
+        console.log('ID: ' + get_id(socket));
+        console.log('ROOMS: ' + get_rooms(socket));
+        console.groupEnd();
+    });
+
+
+    // join a game
+    socket.on('join_game', () => {
+        if (in_room(socket, 'lobby')) {
+            let room_to_join = 'room-' + ROOM_NO;
+            join_room('lobby', socket, room_to_join);
+            console.log('room-' + ROOM_NO + ' length: ' + socket.adapter.rooms['room-' + ROOM_NO].length);
+            if (socket.adapter.rooms[room_to_join].length == 2) {
+                ++ROOM_NO;
+            }
+        }
+    });
+
+    socket.on('game_choice', (data) => {
+        // make sure player is in room
+        if (in_room(socket, 'lobby') == false) {
+
+            socket.choice = data.choice;
+
+            let rooms = get_rooms(socket);
+            let sockets_in_rooms = [];
+            rooms.forEach((room) => {
+                sockets_in_rooms.push(Object.keys(io.sockets.adapter.rooms[room].sockets));
+            });
+
+            sockets_in_rooms.forEach((ids) => {
+                console.group(rooms);
+                ids.forEach((id, index) => {
+                    console.log('player ' + (index + 1) + ': ' + SOCKETS[id].choice);
+                });
+                console.groupEnd();
+            });
+        }
+    });
+
+    socket.on('emit_to_me', () => {
+        socket.emit('response_to_you');
+    });
+
+    socket.on('emit_to_room', () => {
+        socket.broadcast.to(socket.room).emit('response_to_room');
+    });
+
+});
 
