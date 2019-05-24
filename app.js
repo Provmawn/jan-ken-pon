@@ -11,7 +11,7 @@ app.use('/client', express.static(__dirname + '/client'));
 server.listen(2000);
 
 
-
+// helper function that returns an array of the rooms a socket is in
 var get_rooms = (socket) => {
     let info = Object.keys(socket.rooms); // socket.rooms is part of socket.io
     let id = info.shift();
@@ -23,6 +23,8 @@ var get_rooms = (socket) => {
     return rooms;
 }
 
+
+// helper function that returns true if a socket is in a given room
 var in_room = (socket, room) => {
     let rooms = get_rooms(socket);
     let room_index = rooms.indexOf(room);
@@ -33,6 +35,7 @@ var in_room = (socket, room) => {
     return true;
 }
 
+// helper function that broadcasts to the room it is in that it is leaving and joins another room
 var join_room = (room_to_leave, socket, room_to_join) => {
     let rooms = get_rooms(socket);
     let room_index = rooms.indexOf(room_to_leave);
@@ -53,6 +56,7 @@ var join_room = (room_to_leave, socket, room_to_join) => {
     socket.join(room_to_join);
 }
 
+// helper function that gets the id of a socket
 var get_id = (socket) => {
     let info = Object.keys(socket.rooms); // socket.rooms is part of socket.io
     let id = info.shift();
@@ -74,6 +78,7 @@ io.sockets.on('connection', (socket) => {
 
     console.log('(user connected...) users in lobby: ' + socket.adapter.rooms.lobby.length);
 
+    // [none, rock, paper, scissors] options
     socket.choice = 'none';
 
     // put socket in list
@@ -97,7 +102,6 @@ io.sockets.on('connection', (socket) => {
 
 
         // rooms are left automatically upon disconnect
-
 
         // remove socket from 'SOCKETS'
         let i = SOCKETS.indexOf(socket);
@@ -127,18 +131,23 @@ io.sockets.on('connection', (socket) => {
         }
     });
 
+    // player makes a choice [none, rock, paper, scissors]
     socket.on('game_choice', (data) => {
         // make sure player is in room
         if (in_room(socket, 'lobby') == false) {
 
+            // set the player choice [none, rock, paper, scissors]
             socket.choice = data.choice;
 
             let rooms = get_rooms(socket);
             let sockets_in_rooms = [];
+
+            // get a 2d array of the 'rooms' and 'sockets in each room' ex: [[id, id, id], [id, id, id]]
             rooms.forEach((room) => {
                 sockets_in_rooms.push(Object.keys(io.sockets.adapter.rooms[room].sockets));
             });
 
+            // loop through each socket in each room
             sockets_in_rooms.forEach((ids) => {
                 console.group(rooms);
                 ids.forEach((id, index) => {
@@ -149,10 +158,12 @@ io.sockets.on('connection', (socket) => {
         }
     });
 
+    // not used
     socket.on('emit_to_me', () => {
         socket.emit('response_to_you');
     });
 
+    // not used
     socket.on('emit_to_room', () => {
         socket.broadcast.to(socket.room).emit('response_to_room');
     });

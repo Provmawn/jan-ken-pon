@@ -22,8 +22,6 @@
             <button type="button" onclick="game_choice('sissors')">
                 Scissors
             </button>
-            <br>
-            <br>
             <button type="button" onclick="print_socket()">
                 Debug_Print Socket
             </button>
@@ -44,6 +42,7 @@
 
     var socket = io();
 
+    // player choice [none, rock, paper, scissors
     var game_choice = (str) => {
         socket.emit('game_choice', {
             id: socket.id,
