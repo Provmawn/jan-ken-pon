@@ -8,7 +8,7 @@ app.get('/', (req, res) => {
 
 app.use('/client', express.static(__dirname + '/client'));
 
-server.listen(2000);
+server.listen(8080);
 
 
 // helper function that returns an array of the rooms a socket is in
@@ -73,7 +73,7 @@ var ROOM_NO = 0;
 const io = require('socket.io')(server, {});
 io.sockets.on('connection', (socket) => {
 
-    //socket.room = 'lobby';
+    // socket.room = 'lobby';
     socket.join('lobby');
 
     console.log('(user connected...) users in lobby: ' + socket.adapter.rooms.lobby.length);
@@ -94,6 +94,8 @@ io.sockets.on('connection', (socket) => {
         
         if (socket.adapter.rooms.lobby) { // if lobby exists ( at least 1 person is in the lobby )
             console.log('(user disconnected...) users in lobby: ' + socket.adapter.rooms.lobby.length);
+        } else {
+            console.log('(user disconnected...)');
         }
         // let other sockets know of disconnect
         socket.broadcast.to(socket.room).emit('disconnect_', {
