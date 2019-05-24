@@ -133,6 +133,15 @@ io.sockets.on('connection', (socket) => {
         }
     });
 
+    //handles chat in each room
+    socket.on('chat message', function(msg){
+        console.log('message: ' + msg);
+        let room = get_rooms(socket);
+        console.log('Room: '+ room);
+
+        io.in(room).emit('chat message', msg);
+    });    
+
     // player makes a choice [none, rock, paper, scissors]
     socket.on('game_choice', (data) => {
         // make sure player is in room
