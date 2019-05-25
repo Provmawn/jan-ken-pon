@@ -8,7 +8,7 @@ app.get('/', (req, res) => {
 
 app.use('/client', express.static(__dirname + '/client'));
 
-server.listen(8080);
+server.listen(8000);
 
 
 // helper function that returns an array of the rooms a socket is in
@@ -54,6 +54,51 @@ var join_room = (room_to_leave, socket, room_to_join) => {
     socket.leave(rooms[room_index]);
 
     socket.join(room_to_join);
+}
+
+var check_win = (socket) => {
+    //get room client is connected too
+    let room = get_rooms(socket);
+    //get an array of all clients connected to the room (2D array for now)
+    let clients = [];
+
+    //Get Id's of each client connected to room
+    room.forEach((room) => {
+        clients.push(Object.keys(io.sockets.adapter.rooms[room].sockets));
+    });
+
+    //debugging information
+    try {
+        console.log('<----- Game Event: CHECK_WIN() ----->');
+        console.log('Room: ' + room);
+        console.log('Player 1 choice: ' + SOCKETS[clients[0][0]].choice);
+        console.log('Player 2 choice: ' + SOCKETS[clients[0][1]].choice);
+        console.log('<----- Game Event:     END     ----->');
+    }
+    catch(err)
+    {
+        console.log('Waiting for player to connect...');
+    }
+
+    //game logic
+    if (SOCKETS[clients[0][0]].choice != 'none' && SOCKETS[clients[0][1]].choice != 'none') {
+        if (SOCKETS[clients[0][0]].choice == 'rock' && SOCKETS[clients[0][1]].choice == 'paper')
+            io.in(room).emit('winner', 'paper wins')
+        else if (SOCKETS[clients[0][0]].choice == 'rock' && SOCKETS[clients[0][1]].choice == 'sissors')
+            io.in(room).emit('winner', 'rock wins')
+        else if (SOCKETS[clients[0][0]].choice == 'paper' && SOCKETS[clients[0][1]].choice == 'sissors')
+            io.in(room).emit('winner', 'sissors wins')
+        else if (SOCKETS[clients[0][0]].choice == 'paper' && SOCKETS[clients[0][1]].choice == 'rock')
+            io.in(room).emit('winner', 'paper wins')
+        else if (SOCKETS[clients[0][0]].choice == 'sissors' && SOCKETS[clients[0][1]].choice == 'paper')
+            io.in(room).emit('winner', 'sissors wins')
+        else if (SOCKETS[clients[0][0]].choice == 'sissors' && SOCKETS[clients[0][1]].choice == 'rock')
+            io.in(room).emit('winner', 'rock wins')
+        else
+            io.in(room).emit('winner', 'tie')
+        SOCKETS[clients[0][0]].choice = 'none';
+        SOCKETS[clients[0][1]].choice = 'none';
+    }
 }
 
 // helper function that gets the id of a socket
@@ -133,13 +178,17 @@ io.sockets.on('connection', (socket) => {
         }
     });
 
-    //handles chat in each room
+    //handles chat in each room or else default into global lobby chat
     socket.on('chat message', function(msg){
-        console.log('message: ' + msg);
-        let room = get_rooms(socket);
-        console.log('Room: '+ room);
-
-        io.in(room).emit('chat message', msg);
+        if (!in_room(socket, 'lobby')) {
+            console.log('message: ' + msg);
+            let room = get_rooms(socket);
+            console.log('Room: '+ room);
+    
+            io.in(room).emit('chat message', msg);
+        }
+        else
+            io.in('lobby').emit('chat message', msg);
     });    
 
     // player makes a choice [none, rock, paper, scissors]
@@ -151,7 +200,10 @@ io.sockets.on('connection', (socket) => {
             socket.choice = data.choice;
 
             let rooms = get_rooms(socket);
+
+            /*
             let sockets_in_rooms = [];
+            let plays = [];
 
             // get a 2d array of the 'rooms' and 'sockets in each room' ex: [[id, id, id], [id, id, id]]
             rooms.forEach((room) => {
@@ -162,10 +214,18 @@ io.sockets.on('connection', (socket) => {
             sockets_in_rooms.forEach((ids) => {
                 console.group(rooms);
                 ids.forEach((id, index) => {
+                    plays[index] = SOCKETS[id].choice;
                     console.log('player ' + (index + 1) + ': ' + SOCKETS[id].choice);
                 });
                 console.groupEnd();
             });
+
+            //emit choice back to client
+
+            */
+            io.in(rooms).emit('game_choice', socket.choice);
+
+            check_win(socket);
         }
     });
 
