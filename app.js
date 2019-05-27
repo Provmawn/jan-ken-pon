@@ -6,6 +6,11 @@ app.get('/', (req, res) => {
     res.sendFile(__dirname + '/client/index.html');
 });
 
+//serve lobby.html when action = "/lobby"
+app.get('/lobby', (req, res) => {
+    res.sendFile(__dirname + '/client/lobby.html');
+});
+
 app.use('/client', express.static(__dirname + '/client'));
 
 server.listen(8000);
@@ -83,19 +88,19 @@ var check_win = (socket) => {
     //game logic
     if (SOCKETS[clients[0][0]].choice != 'none' && SOCKETS[clients[0][1]].choice != 'none') {
         if (SOCKETS[clients[0][0]].choice == 'rock' && SOCKETS[clients[0][1]].choice == 'paper')
-            io.in(room).emit('winner', 'paper wins')
+            io.in(room).emit('winner', 'SERVER: Paper wins')
         else if (SOCKETS[clients[0][0]].choice == 'rock' && SOCKETS[clients[0][1]].choice == 'sissors')
-            io.in(room).emit('winner', 'rock wins')
+            io.in(room).emit('winner', 'SERVER: Rock wins')
         else if (SOCKETS[clients[0][0]].choice == 'paper' && SOCKETS[clients[0][1]].choice == 'sissors')
-            io.in(room).emit('winner', 'sissors wins')
+            io.in(room).emit('winner', 'SERVER: Sissors wins')
         else if (SOCKETS[clients[0][0]].choice == 'paper' && SOCKETS[clients[0][1]].choice == 'rock')
-            io.in(room).emit('winner', 'paper wins')
+            io.in(room).emit('winner', 'SERVER: Paper wins')
         else if (SOCKETS[clients[0][0]].choice == 'sissors' && SOCKETS[clients[0][1]].choice == 'paper')
-            io.in(room).emit('winner', 'sissors wins')
+            io.in(room).emit('winner', 'SERVER: Sissors wins')
         else if (SOCKETS[clients[0][0]].choice == 'sissors' && SOCKETS[clients[0][1]].choice == 'rock')
-            io.in(room).emit('winner', 'rock wins')
+            io.in(room).emit('winner', 'SERVER: Rock wins')
         else
-            io.in(room).emit('winner', 'tie')
+            io.in(room).emit('winner', 'SERVER: Tie game')
         SOCKETS[clients[0][0]].choice = 'none';
         SOCKETS[clients[0][1]].choice = 'none';
     }
@@ -110,7 +115,7 @@ var get_id = (socket) => {
 }
 
 var SOCKETS = [];
-
+var USERNAMES = [];
 var ROOM_NO = 0;
 
 
@@ -122,7 +127,7 @@ io.sockets.on('connection', (socket) => {
     socket.join('lobby');
 
     console.log('(user connected...) users in lobby: ' + socket.adapter.rooms.lobby.length);
-
+    socket.emit('join lobby', 'SERVER: Welcome to lobby');
     // [none, rock, paper, scissors] options
     socket.choice = 'none';
 
@@ -160,6 +165,7 @@ io.sockets.on('connection', (socket) => {
     // debugging print
     socket.on('print_socket', () => {
         console.group('CURRENT_SOCKET:');
+        console.log("Username: " + socket.username)
         console.log('ID: ' + get_id(socket));
         console.log('ROOMS: ' + get_rooms(socket));
         console.groupEnd();
@@ -172,6 +178,7 @@ io.sockets.on('connection', (socket) => {
             let room_to_join = 'room-' + ROOM_NO;
             join_room('lobby', socket, room_to_join);
             console.log('room-' + ROOM_NO + ' length: ' + socket.adapter.rooms['room-' + ROOM_NO].length);
+            io.in(room_to_join).emit('get room', room_to_join);
             if (socket.adapter.rooms[room_to_join].length == 2) {
                 ++ROOM_NO;
             }
@@ -198,35 +205,17 @@ io.sockets.on('connection', (socket) => {
 
             // set the player choice [none, rock, paper, scissors]
             socket.choice = data.choice;
-
             let rooms = get_rooms(socket);
-
-            /*
-            let sockets_in_rooms = [];
-            let plays = [];
-
-            // get a 2d array of the 'rooms' and 'sockets in each room' ex: [[id, id, id], [id, id, id]]
-            rooms.forEach((room) => {
-                sockets_in_rooms.push(Object.keys(io.sockets.adapter.rooms[room].sockets));
-            });
-
-            // loop through each socket in each room
-            sockets_in_rooms.forEach((ids) => {
-                console.group(rooms);
-                ids.forEach((id, index) => {
-                    plays[index] = SOCKETS[id].choice;
-                    console.log('player ' + (index + 1) + ': ' + SOCKETS[id].choice);
-                });
-                console.groupEnd();
-            });
-
-            //emit choice back to client
-
-            */
             io.in(rooms).emit('game_choice', socket.choice);
 
             check_win(socket);
         }
+    });
+
+    socket.on('get username', (uname) => {
+        socket.username = uname
+        USERNAMES[uname] = socket.username;
+        console.log(socket.username);
     });
 
     // not used

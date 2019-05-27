@@ -1,83 +1,43 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>Page Title</title>
-    <link rel = "stylesheet" href="client/style.css">
+    <title>Welcome</title>
 
     <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/2.2.0/socket.io.dev.js"></script>
     <script src="https://code.jquery.com/jquery-1.11.1.js"></script>
 
 </head>
 <body>
-    <div class ="form">
-        <h1>Rock Paper Sissors</h1>
 
-        <div class = "buttons">
-            <button type="button" onclick="game_choice('rock')">
-                Rock
-            </button>
-            <button type="button" onclick="game_choice('paper')">
-                Paper
-            </button>
-            <button type="button" onclick="game_choice('sissors')">
-                Scissors
-            </button>
-            <button type="button" onclick="print_socket()">
-                Debug_Print Socket
-            </button>
-            <button type="button" onclick="join_game()">
-                Join Game
-            </button>
-        </div>
 
-        <div>
-            <ul id="messages"></ul>
-            <form action="">
-                <input id="m" autocomplete="off" /><button>Send</button>
-            </form>
-        </div>
+    <div class = "form">
+        <h1>Enter user Name to play!</h1>
 
+        <form name ="username" onsubmit="checkForm()" action="/lobby">
+            Username:<br>
+            <input type = "text" name = "uname">
+            <input type="submit" value="Submit">
+        </form>
     </div>
-<script>
 
-    var socket = io();
 
-    // player choice [none, rock, paper, scissors
-    var game_choice = (str) => {
-        socket.emit('game_choice', {
-            id: socket.id,
-            choice: str,
-        });
-        socket.on('game_choice', function(c) {
-            $('#messages').append($('<li>').text('Player chose: ' + c));
-        });
-    }
 
-    var print_socket = () => {
-        socket.emit('print_socket');
-    }
 
-    var join_game = () => {
-        socket.emit('join_game');
-    }
-
-    socket.on('winner', function(txt) {
-        $('#messages').append($('<li>').text('' + txt)); 
-    });
-
-    $(function () {
-        $('form').submit(function(e){
-            e.preventDefault(); // prevents page reloading
-            socket.emit('chat message', $('#m').val());
-            $('#m').val('');
-            return false;
-        });
-        socket.on('chat message', function(msg){
-            $('#messages').append($('<li>').text(msg));
-        });
-    });
-
-</script>
+    <script>
+        var socket = io();
+        
+        function checkForm() {
+            var x = document.forms['username']["uname"].value;
+            if (x == "") {
+                alert("Username must be filled out!");
+            }
+            else
+            {
+                socket.emit('get username', x);
+                //return res.redirect('/lobby');
+            }
+        }
+    </script>
 </body>
 </html>
 

@@ -12,17 +12,31 @@ body {
     background-color: #FFFFFF;
     width: 600px;
     height: 600px;
+    margin: 0 auto; 
     position: absolute;
     left: 50%;
     top: 50%;
     transform: translate(-50%, -50%);
+    overflow: hidden;
   }
   .buttons{
     display: flex; justify-content: center; 
     margin: 10px;
   }
+  .chat-container{
+    height: 400px;
+    overflow-y: auto;
+  }
+  .divider{
+    width:5px;
+    height: auto;
+    display: inline-block;
+  }
   button{
-    size: 25px;
+    size: 35px;
+  }
+  ul {
+    list-style-type:none;
   }
 
   * { margin: 0; padding: 0; box-sizing: border-box; }
