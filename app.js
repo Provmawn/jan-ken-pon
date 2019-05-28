@@ -15,6 +15,18 @@ app.use('/client', express.static(__dirname + '/client'));
 
 server.listen(8000);
 
+var SOCKETS = [];
+
+//data base of usernames and passwords
+var USERS = {
+    //username:password
+    "a" : "a",
+    "ant": "123",
+    "1": '2',
+};
+var ROOM_NO = 0;
+
+
 
 // helper function that returns an array of the rooms a socket is in
 var get_rooms = (socket) => {
@@ -114,11 +126,27 @@ var get_id = (socket) => {
     return id;
 }
 
-var SOCKETS = [];
-var USERNAMES = [];
-var ROOM_NO = 0;
+//check if username is in the database
+var isUsernameTaken = function(data, cb){
+    setTimeout(function(){
+        cb(USERS[data.username]);
+    }, 10);
+}
 
+//check if password is same as one saved in database
+var isValidPassword = function(data, cb) {
+    setTimeout(function(){
+        cb(USERS[data.username] === data.password);
+    }, 10);
+}
 
+//add user to database
+var addUser = function(data, cb) {
+    setTimeout(function(){
+        USERS[data.username] = data.password;
+        cb();
+    }, 10);
+}
 
 const io = require('socket.io')(server, {});
 io.sockets.on('connection', (socket) => {
@@ -212,11 +240,41 @@ io.sockets.on('connection', (socket) => {
         }
     });
 
-    socket.on('get username', (uname) => {
-        socket.username = uname
-        USERNAMES[uname] = socket.username;
-        console.log(socket.username);
+    //check if password matches username in database
+    socket.on('signIn', function(data){
+        console.log('SIGN: ' + data.username + "| PASS: " + data.password);
+        isValidPassword(data, function(res){
+            console.log('res: ' + res);
+            if (res) {
+                socket.emit('signIn-response', {
+                    success: true
+                });
+            }
+            else {
+                socket.emit('signIn-response', {
+                    success: false
+                });
+            }
+        });
     });
+
+    //check if username is present in database
+    socket.on('signUp', function(data){
+        isUsernameTaken(data, function(res) {
+            if (res) {
+                socket.emit('signUp-response', {
+                    success: false
+                });
+            }
+            else {
+                addUser(data, function() {
+                socket.emit('signUp-response', {
+                    success: true
+                });
+            });
+        }
+    });
+});
 
     // not used
     socket.on('emit_to_me', () => {

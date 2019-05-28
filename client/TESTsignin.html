@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Welcome</title>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/2.2.0/socket.io.dev.js"></script>
+    <script src="https://code.jquery.com/jquery-1.11.1.js"></script>
+
+</head>
+<body>
+
+
+    <div class = "form">
+        <h1>Enter user Name to play!</h1>
+
+        <form name ="username" onsubmit="checkForm()" action="/lobby">
+            Username:<br>
+            <input type = "text" name = "uname">
+            <input type="submit" value="Submit">
+        </form>
+    </div>
+
+
+
+
+    <script>
+        var socket = io();
+        
+        function checkForm() {
+            var x = document.forms['username']["uname"].value;
+            if (x == "") {
+                alert("Username must be filled out!");
+            }
+            else
+            {
+                socket.emit('get username', x);
+                //return res.redirect('/lobby');
+            }
+        }
+    </script>
+</body>
+</html>
+
