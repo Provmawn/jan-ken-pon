@@ -85,8 +85,8 @@ var check_win = (socket) => {
     try {
         console.log('<----- Game Event: CHECK_WIN() ----->');
         console.log('Room: ' + room);
-        console.log('Player 1 choice: ' + SOCKETS[clients[0][0]].choice);
-        console.log('Player 2 choice: ' + SOCKETS[clients[0][1]].choice);
+        console.log(SOCKETS[clients[0][0]].username +' choice: ' + SOCKETS[clients[0][0]].choice);
+        console.log(SOCKETS[clients[0][1]].username + ' choice: ' + SOCKETS[clients[0][1]].choice);
         console.log('<----- Game Event:     END     ----->');
     }
     catch(err)
@@ -97,17 +97,17 @@ var check_win = (socket) => {
     //game logic
     if (SOCKETS[clients[0][0]].choice != 'none' && SOCKETS[clients[0][1]].choice != 'none') {
         if (SOCKETS[clients[0][0]].choice == 'rock' && SOCKETS[clients[0][1]].choice == 'paper')
-            io.in(room).emit('winner', 'SERVER: Paper wins')
+            io.in(room).emit('winner', 'SERVER: ' + SOCKETS[clients[0][1]].username + ' wins with PAPER');
         else if (SOCKETS[clients[0][0]].choice == 'rock' && SOCKETS[clients[0][1]].choice == 'sissors')
-            io.in(room).emit('winner', 'SERVER: Rock wins')
+            io.in(room).emit('winner', 'SERVER: ' + SOCKETS[clients[0][0]].username + ' wins with ROCK');
         else if (SOCKETS[clients[0][0]].choice == 'paper' && SOCKETS[clients[0][1]].choice == 'sissors')
-            io.in(room).emit('winner', 'SERVER: Sissors wins')
+            io.in(room).emit('winner', 'SERVER: ' + SOCKETS[clients[0][1]].username + ' wins with SCISSORS')
         else if (SOCKETS[clients[0][0]].choice == 'paper' && SOCKETS[clients[0][1]].choice == 'rock')
-            io.in(room).emit('winner', 'SERVER: Paper wins')
+            io.in(room).emit('winner', 'SERVER: ' + SOCKETS[clients[0][0]].username + ' wins with PAPER');
         else if (SOCKETS[clients[0][0]].choice == 'sissors' && SOCKETS[clients[0][1]].choice == 'paper')
-            io.in(room).emit('winner', 'SERVER: Sissors wins')
+            io.in(room).emit('winner', 'SERVER: ' + SOCKETS[clients[0][0]].username + ' wins with SCISSORS')
         else if (SOCKETS[clients[0][0]].choice == 'sissors' && SOCKETS[clients[0][1]].choice == 'rock')
-            io.in(room).emit('winner', 'SERVER: Rock wins')
+            io.in(room).emit('winner', 'SERVER: ' + SOCKETS[clients[0][1]].username + ' wins with ROCK')
         else
             io.in(room).emit('winner', 'SERVER: Tie game')
         SOCKETS[clients[0][0]].choice = 'none';
@@ -153,21 +153,8 @@ var addUser = function(data, cb) {
 const io = require('socket.io')(server, {});
 io.sockets.on('connection', (socket) => {
 
-    // socket.room = 'lobby';
-    socket.join('lobby');
-
-    console.log('(user connected...) users in lobby: ' + socket.adapter.rooms.lobby.length);
-    socket.emit('join lobby', 'SERVER: Welcome to lobby');
-    // [none, rock, paper, scissors] options
-    socket.choice = 'none';
-
     // put socket in list
     SOCKETS[socket.id] = socket;
-
-    // on disconnecting
-    socket.on('disconnecting', () => {
-
-    });
 
     // on disconnect
     socket.on('disconnect', () => {
@@ -263,6 +250,17 @@ io.sockets.on('connection', (socket) => {
         });
     });
 
+    socket.on('join lobby', function(data){
+        // socket.room = 'lobby';
+        socket.join('lobby');
+
+        console.log('(user connected...) users in lobby: ' + socket.adapter.rooms.lobby.length);
+        console.log(socket.username +' has joined the lobby')
+        socket.emit('join lobby', 'SERVER: Welcome to lobby ' + socket.username);
+        // [none, rock, paper, scissors] options
+        socket.choice = 'none';
+    });
+
     //check if username is present in database
     socket.on('signUp', function(data){
         isUsernameTaken(data, function(res) {
@@ -279,16 +277,6 @@ io.sockets.on('connection', (socket) => {
             });
         }
     });
-    });
-
-    // not used
-    socket.on('emit_to_me', () => {
-        socket.emit('response_to_you');
-    });
-
-    // not used
-    socket.on('emit_to_room', () => {
-        socket.broadcast.to(socket.room).emit('response_to_room');
     });
 
 });

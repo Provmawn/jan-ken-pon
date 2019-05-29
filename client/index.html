@@ -70,6 +70,9 @@
         if (data.success){
             signInDiv.style.display = 'none';
             formDiv.style.display = 'inline-block';
+            socket.emit('join lobby', {
+                username: socket.username
+            });
         }
         else
             alert("Sign in uncessful...");
@@ -80,7 +83,7 @@
             alert("Sign up sucessful!!")
         }
         else
-            alert("Sign up uncessful...");
+            alert("Sign up uncessful... Username is Taken!!");
     });
 
     // player choice [none, rock, paper, scissors
