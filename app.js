@@ -1,3 +1,8 @@
+//get mongojs to talk to mongodb server
+var mongojs = require('mongojs');
+//port of mongod server and collection inside of database myGame
+var db = mongojs('localhost:8000/myGame', ['account']);
+
 var express = require('express');
 var app = express();
 var server = require('http').Server(app);
@@ -16,14 +21,6 @@ app.use('/client', express.static(__dirname + '/client'));
 server.listen(8000);
 
 var SOCKETS = [];
-
-//data base of usernames and passwords
-var USERS = {
-    //username:password
-    "a" : "a",
-    "ant": "123",
-    "1": '2',
-};
 var ROOM_NO = 0;
 
 
@@ -128,24 +125,29 @@ var get_id = (socket) => {
 
 //check if username is in the database
 var isUsernameTaken = function(data, cb){
-    setTimeout(function(){
-        cb(USERS[data.username]);
-    }, 10);
+    db.account.find({username:data.username},function(err, res){
+        if (res.length > 0)
+            cb(true);
+        else
+            cb(false);
+    });
 }
 
 //check if password is same as one saved in database
 var isValidPassword = function(data, cb) {
-    setTimeout(function(){
-        cb(USERS[data.username] === data.password);
-    }, 10);
+    db.account.find({username:data.username, password:data.password},function(err, res){
+        if (res.length > 0)
+            cb(true);
+        else
+            cb(false);
+    });
 }
 
 //add user to database
 var addUser = function(data, cb) {
-    setTimeout(function(){
-        USERS[data.username] = data.password;
+    db.account.insert({username:data.username, password:data.password},function(err){
         cb();
-    }, 10);
+    });
 }
 
 const io = require('socket.io')(server, {});
@@ -219,11 +221,12 @@ io.sockets.on('connection', (socket) => {
             console.log('message: ' + msg);
             let room = get_rooms(socket);
             console.log('Room: '+ room);
+            console.log('Username: ' + socket.username)
     
-            io.in(room).emit('chat message', msg);
+            io.in(room).emit('chat message', msg, socket.username);
         }
         else
-            io.in('lobby').emit('chat message', msg);
+            io.in('lobby').emit('chat message', msg, socket.username);
     });    
 
     // player makes a choice [none, rock, paper, scissors]
@@ -242,13 +245,15 @@ io.sockets.on('connection', (socket) => {
 
     //check if password matches username in database
     socket.on('signIn', function(data){
-        console.log('SIGN: ' + data.username + "| PASS: " + data.password);
+        console.log('SIGN: ' + data.username + "  |  PASS: " + data.password);
         isValidPassword(data, function(res){
             console.log('res: ' + res);
             if (res) {
                 socket.emit('signIn-response', {
                     success: true
                 });
+                //add username to socket object
+                socket.username = data.username;
             }
             else {
                 socket.emit('signIn-response', {
@@ -274,7 +279,7 @@ io.sockets.on('connection', (socket) => {
             });
         }
     });
-});
+    });
 
     // not used
     socket.on('emit_to_me', () => {
