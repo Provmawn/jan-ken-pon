@@ -25,7 +25,7 @@ body {
   }
   .chat-container{
     height: 400px;
-    overflow-y: auto;
+    overflow: scroll;
   }
   .divider{
     width:5px;

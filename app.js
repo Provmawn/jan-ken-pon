@@ -20,6 +20,7 @@ app.use('/client', express.static(__dirname + '/client'));
 
 server.listen(8000);
 
+//global list of SOCKET[socket.id] objects to be called for data from connected client
 var SOCKETS = [];
 var ROOM_NO = 0;
 
