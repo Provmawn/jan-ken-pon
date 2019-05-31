@@ -1,7 +1,7 @@
 //get mongojs to talk to mongodb server
 var mongojs = require('mongojs');
 //port of mongod server and collection inside of database myGame
-var db = mongojs('localhost:8000/myGame', ['account']);
+var db = mongojs('localhost:8000/myGame', ['account', 'deck']);
 
 var express = require('express');
 var app = express();
@@ -151,6 +151,16 @@ var addUser = function(data, cb) {
     });
 }
 
+//get deck list from database
+var get_deck = function(data, cb) {
+    db.deck.find({username:data.username}, function(err, res){
+        if (res.length > 0)
+            cb(res[0].deck_list); //get deck list from mongodb
+        else
+            cb(err);
+    });
+}
+
 const io = require('socket.io')(server, {});
 io.sockets.on('connection', (socket) => {
 
@@ -180,12 +190,21 @@ io.sockets.on('connection', (socket) => {
     });
 
 
+
+    socket.on('show cards', () => {
+        console.log("socket.deck: " + socket.deck);
+        if (socket.deck)
+            socket.emit('display cards', socket.deck);
+    });
+
+
     // debugging print
     socket.on('print_socket', () => {
         console.group('CURRENT_SOCKET:');
         console.log("Username: " + socket.username)
         console.log('ID: ' + get_id(socket));
         console.log('ROOMS: ' + get_rooms(socket));
+        console.log('DECK: ' + socket.deck);
         console.groupEnd();
     });
 
@@ -254,12 +273,17 @@ io.sockets.on('connection', (socket) => {
     socket.on('join lobby', function(data){
         // socket.room = 'lobby';
         socket.join('lobby');
-
         console.log('(user connected...) users in lobby: ' + socket.adapter.rooms.lobby.length);
         console.log(socket.username +' has joined the lobby')
         socket.emit('join lobby', 'SERVER: Welcome to lobby ' + socket.username);
         // [none, rock, paper, scissors] options
         socket.choice = 'none';
+
+        //Call database upon signin and populate socket.deck
+        var cursor = db.collection('deck').find().toArray(function(err, res){
+            console.log(res[0].deck_list)
+            socket.deck = res[0].deck_list;
+        });
     });
 
     //check if username is present in database

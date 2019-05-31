@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>Page Title</title>
+    <title>Project Orbit(beta)</title>
     <link rel = "stylesheet" href="client/style.css">
     <link rel = "stylesheet" href="https://www.w3schools.com/w3css/4/w3.css">
     <style>
@@ -22,10 +22,10 @@
     </div>
 
     <div id = "form"class ="form" style="display: none;">
-        <h1>Rock Paper Sissors</h1>
+        <h1>Project Orbit(beta)</h1>
 
         <div class = "buttons">
-            <button class="w3-button w3-deep-purple" onclick="game_choice('rock')">Rock</button>
+            <button class="w3-button w3-deep-purple" onclick="show_cards()">Cards</button>
             <button class="w3-button w3-deep-purple" onclick="game_choice('paper')">Paper</button>
             <button class="w3-button w3-deep-purple" onclick="game_choice('sissors')">Scissors</button>
             <button class="w3-button w3-deep-purple" onclick="print_socket()">Debug_Print Socket</button>
@@ -38,8 +38,9 @@
                 <input id="m" autocomplete="off" /><button>Send</button>
             </form>
         </div>
-
     </div>
+    <img id = "img" src = "../client/assets/Icons(Series 1)/Absolution-Icon.png"> </img>
+
 <script>
 
     var socket = io();
@@ -52,6 +53,18 @@
     var signPassword = document.getElementById('signIn-password');
     var formDiv = document.getElementById('form');
     var sh = document.getElementById('messages');
+
+    var i = document.getElementById('img');
+
+
+    var show_cards = function() {
+        socket.emit('show cards');
+    }
+
+    socket.on('display cards', function(cards){
+        if (cards[0] == 'card1')
+            i.src = '../client/assets/Icons(Series 1)/mandy-icon.png';
+    });
 
     signInBtn.onclick = function() {
         socket.emit('signIn', {
